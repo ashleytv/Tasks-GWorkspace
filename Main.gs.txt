@@ -1,0 +1,48 @@
+function mainExec(e){
+  if (!e) return; 
+
+  const range = e.range;
+  const sheet = range.getSheet();
+  const sheetName = sheet.getName();
+  const a1Notation = range.getA1Notation();
+  const value = e.value;
+
+  // --- New pending
+  if (sheetName === "Pendientes" 
+    && a1Notation === "C2" 
+    && value === "TRUE") {
+      changeState("C1", sheet, range)
+      newPending(); 
+      sheet.getRange("C1").setValue("Nuevo pendiente");
+  }
+  
+
+  // --- Register new pending
+  if (sheetName === "Nuevo pendiente"
+    && a1Notation === "A2" 
+    && value === "TRUE"){
+      changeState("A1", sheet, range)
+      registerNewPending(); 
+      sheet.getRange("A1").setValue("Registrar nuevo pendiente");
+  }
+}
+
+function changeState(buttonCell, sheet, range){
+  const state = sheet.getRange(buttonCell).getValue(); 
+  if (state != "Cargando..."){
+    sheet.getRange(buttonCell).setValue("Cargando...");
+    range.setValue(false); // Uncheck the checkbox
+  }
+}
+
+
+function updAll (){
+  filterPendings();
+  Utilities.sleep(100);
+  cleanCalendar();
+  Utilities.sleep(100);
+  createScheduleEventsList();
+  Utilities.sleep(100)
+  updUnscheduledTasks();
+  updScheduleTasks(); 
+}

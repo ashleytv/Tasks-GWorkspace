@@ -1,0 +1,134 @@
+const email = "your email"; 
+
+function getCalendarApp() {
+  return CalendarApp.getCalendarById(email);
+}
+
+/*
+  Creates a new all-day event in the calendar stored in the calendar variable
+*/
+function createEventToCalendar (eventDate, eventName, eventArea, description, eventHour) {
+  const calendar = getCalendarApp();
+  const timeFormat = "H ";
+
+  let newEvent;
+
+  let dayEvents = calendar.getEventsForDay(eventDate);
+  let dayEventExists = false;
+  let exactHourEventExists = false; // Event at a specific time
+  let eventColor = CalendarApp.EventColor.GREEN;
+
+  if (dayEvents != null) {
+    for (let i = 0; i < dayEvents.length; i++) {
+      if (dayEvents[i].getTitle().endsWith(". " + eventName)) {
+        dayEventExists = true;
+        break;
+      }
+    }
+
+    if (!dayEventExists) {
+      let format = ". "; 
+        if (eventArea === "TRA")
+          format = "2. ";
+
+        if (eventArea === "PER")
+          format = "1. ";
+
+        if (eventArea === "EST")
+          format = "3. ";
+      
+      newEvent = calendar.createAllDayEvent(format + eventName, eventDate);
+      newEvent.removeAllReminders();
+
+      if (eventArea === "TRA") {
+        newEvent.setColor(CalendarApp.EventColor.GREEN);
+      } else if(eventArea === "PER") {
+        newEvent.setColor(CalendarApp.EventColor.MAUVE);
+      } else if (eventArea === "EST") {
+        newEvent.setColor(CalendarApp.EventColor.ORANGE);
+      } else {
+        eventColor.setColor; (eventColor);
+      }
+      newEvent.setDescription(String(description));
+    }
+
+    if (eventHour.startsWith(timeFormat)) {
+      // Separates start time and end time
+      hours = eventHour.split('-');
+
+      // Removes the string format from the description
+      hours[0] = hours[0].replace(/^H\s*/, "");
+
+      let startTime = aplyTimeFormat(hours[0], eventDate);
+      let endTime;
+
+      try {
+        endTime = aplyTimeFormat(hours[1], eventDate);
+      } catch (error) {
+        endTime = new Date(eventDate);
+        endTime.setHours(startTime.getHours() + 1)
+        endTime.setMinutes(startTime.getMinutes());
+      }
+
+      Logger.log("hi:" + startTime + "hf:" + endTime);
+
+      let exactHourEventsList = calendar.getEvents(startTime, endTime);
+      for (let i = 0; i < exactHourEventsList.length; i++) {
+        Logger.log("name" + exactHourEventsList[i].getTitle());
+        if (exactHourEventsList[i].getTitle() === eventName) {
+          exactHourEventExists = true;
+          break;
+        }
+      }
+
+      if (!exactHourEventExists) {
+        let event = calendar.createEvent(eventName, startTime, endTime);
+      if (eventArea === "TRA") {
+        event.setColor(CalendarApp.EventColor.GREEN);
+      } else if(eventArea === "PER") {
+        event.setColor(CalendarApp.EventColor.MAUVE);
+      } else if (eventArea === "EST") {
+        event.setColor(CalendarApp.EventColor.ORANGE);
+      } else {
+        event.setColor; (eventColor);
+      }   
+      }
+    }
+  }
+}
+
+/*
+  Deletes an event from the calendar
+*/
+function deleteEventFromCalendar(eventDate, eventName) {
+  const calendar = getCalendarApp();
+  let dayEvents = calendar.getEventsForDay(eventDate);
+
+  for (let i = 0; i < dayEvents.length; i++) {
+    if (dayEvents[i].getTitle() === eventName || dayEvents[i].getTitle().endsWith(". " + eventName))  
+    {
+      dayEvents[i].deleteEvent();
+    }
+  }
+}
+
+/*
+  Converts time from "H hour:minutes" format to a Date type object
+*/
+function aplyTimeFormat(hours, rawEventDate) {
+  let timePartsString = hours.split(":");
+
+  let eventDate = new Date(rawEventDate);
+
+  // Extracts hours and minutes
+  let h = parseInt(timePartsString[0], 10);
+  let m = 0;
+  if (timePartsString.length > 1) {
+    m = parseInt(timePartsString[1], 10);
+  }
+
+  eventDate.setHours(h);
+  eventDate.setMinutes(m);
+
+  return eventDate;
+}

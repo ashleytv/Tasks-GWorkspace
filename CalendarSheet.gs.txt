@@ -1,0 +1,82 @@
+const firstRowWithData_CS = 3;
+
+const numColDate_CS = 1;
+const numColName_CS = 2; 
+const numColDetails_CS = 3; 
+const numColHour_CS = 4; 
+const numColCheckbox_CS = 5; 
+
+const datesRange_CS = "A3:A";
+
+function getCalendarSheet (){
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  return spreadsheet.getSheetByName("Calendario");
+}
+
+/*
+  Inserts the specified formula into the checkbox cell to evaluate if the pending task exists in the pending tasks list
+*/
+function updFormulaCalendarSheet(){
+
+  const calendarFormula = `ARRAYFORMULA(IF(ISBLANK(A3:A); ""; 
+    COUNTIFS('Pendientes'!A6:A; A3:A; 
+             'Pendientes'!I6:I; B3:B; 
+             'Pendientes'!J6:J; IF(C3:C = ""; ""; C3:C);
+             'Pendientes'!K6:K; IF(D3:D = ""; ""; D3:D);
+             'Pendientes'!E6:E; "Agendar") > 0
+    ))
+  `;
+
+  getCalendarSheet().getRange(firstRowWithData_CS, numColCheckbox_CS).setFormula(calendarFormula);
+}
+
+/*
+  Deletes an independent event
+*/
+function deleteEvent () {
+  const calendarSheet = getCalendarSheet(); 
+
+  let rowToDelete = SpreadsheetApp.getActiveSheet().getActiveRange().getRow();
+
+  let eventDate = calendarSheet.getRange(rowToDelete, numColDate_CS).getValue();
+  let eventName = calendarSheet.getRange(rowToDelete, numColName_CS).getValue();
+
+  deleteEventFromCalendar(eventDate, eventName);
+  calendarSheet.deleteRow(rowToDelete);
+  updFormulaCalendarSheet();
+}
+
+/*
+  Clears all events that should NOT exist in the calendar
+*/
+function cleanCalendar (){
+  const calendarSheet = getCalendarSheet();
+  const lastRow = lastRowInRange(datesRange_CS, 2, calendarSheet); 
+
+  let eventName = "";
+  let eventDate = "";
+  let rowsToDeleteList = []; 
+
+  // Deletes each calendar event that should not exist and adds 
+  // the row to the list to delete it from the sheet 
+  if (lastRow >= firstRowWithData_CS ){
+    for (let i = lastRow; i >= firstRowWithData_CS; i--){
+      if (!calendarSheet.getRange(i, numColCheckbox_CS).getValue()){
+        eventDate = calendarSheet.getRange(i, numColDate_CS).getValue();
+        eventName = calendarSheet.getRange(i, numColName_CS).getValue(); 
+        rowsToDeleteList.push(i);
+        deleteEventFromCalendar(eventDate, eventName);
+      }
+    }
+
+    // Deletes the rows from the sheet
+    if (rowsToDeleteList.length != 0){
+      rowsToDeleteList.sort((a, b) => b - a); 
+      for (let j = 0; j < rowsToDeleteList.length; j++){
+        calendarSheet.deleteRow(rowsToDeleteList[j]);
+      }
+    }
+
+    updFormulaCalendarSheet(); 
+  }
+}

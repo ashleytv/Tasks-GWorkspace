@@ -1,0 +1,66 @@
+const numColDate_FS = 2; 
+const numColCategory_FS = 3; 
+const numColArea_FS = 4;
+const numColType_FS = 5; 
+const numColName_FS = 6;
+const numColDetails_FS = 7;
+const numColHour_FS = 8; 
+
+
+function getFormsSheet (){
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  return spreadsheet.getSheetByName("Nuevo pendiente");
+}
+
+/*
+  Registers the last pending task submitted through the form into the Pendings sheet
+*/
+function registerNewPending() {
+  const formsSheet = getFormsSheet(); 
+  const lastRowForms = formsSheet.getLastRow(); 
+
+  let response = formsSheet.getRange(lastRowForms, numColName_FS).getValue();
+
+  if (response === "AT"){
+    updAll(); 
+  } else if (response === "AA"){
+    updScheduleTasks();
+  } else if (response === "AC"){
+    createScheduleEventsList(); 
+  } else if (response === "AP"){
+    updUnscheduledTasks();
+  } else if (response === "LC"){
+    cleanCalendar()
+  } else {
+    
+  newPending(); // Inserts a new row in the Pendings sheet 
+
+  const pendingsSheet = getPendingsSheet(); 
+  const newRowPendings = pendingsSheet.getLastRow() - 1; 
+
+  const newDate = formsSheet.getRange(lastRowForms, numColDate_FS).getValue();
+
+  if (newDate != ""){
+    // Date
+    pendingsSheet.getRange(newRowPendings, numColDate_PS).setValue(newDate);
+
+    // Category
+    pendingsSheet.getRange(newRowPendings, numColCategory_PS).setValue(formsSheet.getRange(lastRowForms, numColCategory_FS).getValue());
+
+    // Area
+    pendingsSheet.getRange(newRowPendings, numColArea_PS).setValue(formsSheet.getRange(lastRowForms, numColArea_FS).getValue());
+
+    // Type
+    pendingsSheet.getRange(newRowPendings, numColType_PS).setValue(formsSheet.getRange(lastRowForms, numColType_FS).getValue());
+
+    // Name
+    pendingsSheet.getRange(newRowPendings, numColName_PS).setValue(formsSheet.getRange(lastRowForms, numColName_FS).getValue());
+
+    // Details
+    pendingsSheet.getRange(newRowPendings, numColDetails_PS).setValue(formsSheet.getRange(lastRowForms, numColDetails_FS).getValue());
+
+    // Hour
+    pendingsSheet.getRange(newRowPendings, numColHour_PS).setValue(formsSheet.getRange(lastRowForms, numColHour_FS).getValue());
+  }
+  }
+}

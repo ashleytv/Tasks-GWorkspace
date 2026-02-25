@@ -1,0 +1,145 @@
+const idScheduleTasks = "your tasks list ID of schedule items";
+const idUnscheduledTasks = "your tasks list ID of unscheduled items";
+const maxWeeksToShow = 4; 
+
+function getTaskLists() {
+  let taskLists = Tasks.Tasklists.list().items;
+
+  if (taskLists && taskLists.length > 0) {
+    for (let i = 0; i < taskLists.length; i++) {
+      let list = taskLists[i];
+      Logger.log('List ID: ' + list.id + ', List name: ' + list.title);
+    }
+  }
+}
+
+/*
+  Updates the list of tasks that ARE NOT scheduled by deleting all tasks and adding those from the spreadsheet
+*/
+function updUnscheduledTasks(){
+  deleteTasks(idUnscheduledTasks);
+  addTasks("E6:E", "E6:F", "A6:A", idUnscheduledTasks);
+}
+
+/*
+  Updates the list of tasks that ARE scheduled by deleting all tasks and adding those from the spreadsheet
+*/
+function updScheduleTasks(){
+  deleteTasks(idScheduleTasks);
+  addTasks("L6:L", "L6:M", "H6:H", idScheduleTasks);
+}
+
+/*
+  Adds the tasks from the spreadsheet to the task list received as a parameter
+*/
+function addTasks(rangeCalculateLastRow, rangeNameDetails, rangeDate, idTasksList) {
+  const detailsSheet = getDetailsSheet(); 
+
+  // Gets the last row with data in the specified range
+  const lastRow = lastRowInRange(rangeCalculateLastRow, 5, detailsSheet);
+
+  // Range for names and subtasks
+  const taskRange = detailsSheet.getRange(rangeNameDetails + lastRow);
+  const taskValues = taskRange.getValues(); // Columns: 0 = name, 1 = subtasks
+
+  // Range for due dates
+  const dueDateRange = detailsSheet.getRange(rangeDate + lastRow);
+  const dueDates = dueDateRange.getValues(); // Column 0 = due date
+
+  // Maximum date calculation
+  const maxDateToShow = getMaxDateToShow(); 
+
+  // Iterates through tasks
+  for (let i = 0; i < taskValues.length; i++) {
+    const taskName = taskValues[i][0];
+    const subtasksList = String(taskValues[i][1]);
+    const dueDate = dueDates[i][0];
+
+    // Verification conditions to add task
+    const isValidTask = taskName !== "" &&
+                        (dueDate <= maxDateToShow || 
+                          dueDate === "");
+
+    if (isValidTask) {
+      createTask(taskName, subtasksList, dueDate, idTasksList);
+    } else {
+      Logger.log("Task not added: " + taskName);
+    }
+  }
+}
+
+function getMaxDateToShow (){
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + (7 * maxWeeksToShow));
+}
+
+/*
+  Creates a task in the task list
+*/
+function createTask(taskName, subtasksList, dueDate, idTasksList){
+  let subtasks = ""; 
+  if (typeof subtasksList === "string" && subtasksList !== "") {
+    let allSubtasks = subtasksList.split("\n"); // Separates all lines of text
+
+    for (let j = 0; j < allSubtasks.length; j++) {
+      let currentLine = allSubtasks[j].substring(0, 2); // Extracts the first two characters of each subtask
+     
+      // Evaluates if the subtask is already done "L "; if not, adds it to reflect in the task details
+      if (currentLine !== "L " && allSubtasks[j] !== "") 
+        subtasks += "     " + allSubtasks[j]; // Leaving space for formatting when copied to the agenda
+          
+        if (j !== (allSubtasks.length - 1))
+          subtasks += "\n"; 
+    }
+  }
+
+  let subtasksWithTitle = "";
+  if (subtasks !== "") 
+    subtasksWithTitle = taskName + "\n" + subtasks; 
+      
+
+  let task = {
+    title: taskName,
+    notes: subtasksWithTitle
+  };
+
+  if (dueDate != "") { // Evaluates if the due date is empty
+    let date = dueDate; 
+    // Creates a new date with the due date
+    let expiration = new Date(date);
+    expiration.setHours(0, 0, 0, 0); // Sets due date to midnight
+    task.due = expiration.toISOString(); // Adds due date to the task 
+  }
+  
+  Tasks.Tasks.insert(task, idTasksList);
+  Logger.log("Adding task: " + task.title);  // Log task name
+  Utilities.sleep(1000);  // 1-second pause between insertions
+}
+
+/*
+  Deletes the tasks from the task list received as a parameter
+*/
+function deleteTasks(idTasksList) {  
+  let tasks = Tasks.Tasks.list(idTasksList).items;  // Gets the initial list of tasks
+  
+  while (tasks && tasks.length > 0) {  // Continue while there are tasks
+    for (let i = 0; i < tasks.length; i++) {
+      try {
+        if (tasks[i].id) {  // Check if task has an ID
+          Logger.log("Deleting task: " + tasks[i].title);  // Log deleted task title
+          Tasks.Tasks.remove(idTasksList, tasks[i].id);  // Delete task by ID
+          
+          // Pause to avoid exceeding quotas
+          Utilities.sleep(1000);  // 1-second pause between deletions
+        }
+      } catch (error) {
+        Logger.log("Error deleting task: " + tasks[i].title + " - " + error);
+      }
+    }
+    
+    // Refresh task list after deleting current batch
+    tasks = Tasks.Tasks.list(idTasksList).items;
+  }
+
+  Logger.log("No more tasks found to delete.");
+}

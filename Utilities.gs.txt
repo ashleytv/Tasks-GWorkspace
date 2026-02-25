@@ -1,0 +1,18 @@
+/*
+  Returns the last non-empty row in the specified range and sheet
+*/
+function lastRowInRange(dataRange, quantityRowsToAdd, sheet) {
+  let range = sheet.getRange(dataRange); 
+  let values = range.getValues();
+  
+  let lastRow = 0;
+  
+  // Iterates through rows from end to beginning to find the last one with a value
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (values[i][0] !== "") {
+      lastRow = i + 1;  // Apps Script rows are 1-indexed
+      break;
+    }
+  }
+  return lastRow + quantityRowsToAdd; 
+}

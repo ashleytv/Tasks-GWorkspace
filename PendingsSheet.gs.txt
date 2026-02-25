@@ -1,0 +1,55 @@
+const numColDate_PS = 1;
+const numColCategory_PS = 5; 
+const numColArea_PS = 6;
+const numColType_PS = 7; 
+const numColName_PS = 8;
+const numColDetails_PS = 10;
+const numColHour_PS = 11; 
+const numColState_PS = 12;  
+
+function getPendingsSheet(){
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  return spreadsheet.getSheetByName("Pendientes"); 
+}
+
+/*
+  Sorts the filter data by date in ascending order
+*/
+function sortFilter(){
+  const filter = getPendingsSheet().getFilter();
+  filter.sort(numColDate_PS, true); 
+}
+
+
+/*
+  Filters the pending tasks, leaving only those with the pending status
+*/
+function filterPendings(){
+  const deliveredStatus = "Entregado"; 
+  const passedStatus = "Ya pasó"; 
+
+  const criteria = SpreadsheetApp.newFilterCriteria().setHiddenValues(
+    [deliveredStatus, passedStatus]
+  ).build();
+
+  getPendingsSheet().getFilter().setColumnFilterCriteria(numColState_PS, criteria);
+
+  sortFilter();
+}
+
+/*
+  Inserts a new row to add a new pending task
+*/
+function newPending() {
+  const sheet = getPendingsSheet();
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  sheet.insertRowBefore(lastRow);
+
+  const sourceRange = sheet.getRange(lastRow + 1, 1, 1, lastCol);
+
+  const destinationRange = sheet.getRange(lastRow, 1, 2, lastCol);
+
+  sourceRange.autoFill(destinationRange, SpreadsheetApp.AutoFillSeries.DEFAULT_SERIES);
+}

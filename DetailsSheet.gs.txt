@@ -1,0 +1,54 @@
+const numColDate_DS = 8;
+const numColName_DS = 12;
+const numColDetails_DS = 13;
+const numColHour_DS = 14; 
+const numColCheckbox_DS = 15; 
+
+function getDetailsSheet (){
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  return spreadsheet.getSheetByName("Desgloses");
+}
+
+/*
+  Takes the list of tasks to be scheduled and adds each one to the calendar
+*/
+function createScheduleEventsList (){
+  cleanCalendar(); 
+
+  const detailsSheet = getDetailsSheet(); 
+
+  let eventDate;
+  let eventName;
+  let details; 
+  let newRow; 
+
+  updFormulaCalendarSheet();
+
+  for (let i = 6; i <= 55; i++) { // Range of rows for delivery events
+    if (!detailsSheet.getRange(i, numColCheckbox_DS).getValue()) {
+      eventDate = detailsSheet.getRange(i, numColDate_DS).getValue();
+      eventName = detailsSheet.getRange(i, numColName_DS).getValue();
+      details = detailsSheet.getRange(i, numColDetails_DS).getValue();
+      eventHour = detailsSheet.getRange(i, numColHour_DS).getValue();
+
+      if (eventName != "" && eventDate != "") {
+        let match = eventName.split('-');
+
+        if (match != null){
+          let eventArea = match[0];
+
+          createEventToCalendar(eventDate, eventName, eventArea, details, eventHour); 
+
+          const calendarSheet = getCalendarSheet();
+          newRow = (lastRowInRange(datesRange_CS, 2, calendarSheet)) + 1;
+
+          calendarSheet.getRange(newRow, numColDate_CS).setValue(eventDate);
+          calendarSheet.getRange(newRow, numColName_CS).setValue(eventName);
+          calendarSheet.getRange(newRow, numColDetails_CS).setValue(details);
+          calendarSheet.getRange(newRow, numColHour_CS).setValue(eventHour);
+          calendarSheet.getRange(newRow, numColCheckbox_CS).insertCheckboxes();
+        }
+      }
+    }
+  }
+}
